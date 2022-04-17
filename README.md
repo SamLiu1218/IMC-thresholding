@@ -43,6 +43,8 @@ Make sure to click "Output image" to record the current thresholds. To record th
 
 Switch between "raw" and "thresholded" to check how many pixels are filtered out.
 
+Hover over the input boxes to see the arrows, which you can use to increase or decrease the value by 0.2 per step. 
+
 Colormap "hot", "gist_heat" and "afmhot" are all red-to-yellow colormaps, with different progression. 
 
 When a channel is loaded, if the thresholds were recorded it will also load the thresholds. If not, the default thresholds will be 0 and max.
