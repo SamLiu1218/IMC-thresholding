@@ -63,7 +63,7 @@ class ThresholdGUI:
             style={'description_width': 'initial'},
             layout={'width': 'initial'}
         )
-        box_select = widgets.VBox((self.drop_fn, self.drop_filter, self.drop_m, self.drop_overlay, self.drop_cmap),
+        box_select = widgets.VBox((self.drop_fn, self.drop_m, self.drop_overlay, self.drop_cmap),
             layout = widgets.Layout(display='flex',
                         flex_flow='column',
                         align_items='initial',
@@ -326,7 +326,7 @@ class ThresholdGUI:
         self.text_cmax.observe(cbk_text_cmax)
         self.text_cmin.observe(cbk_text_cmin)
         self.drop_fn.observe(cbk_drop_fn)
-        self.drop_filter.observe(cbk_drop_filter)
+#         self.drop_filter.observe(cbk_drop_filter)
         self.drop_m.observe(cbk_drop_m)
         self.drop_overlay.observe(cbk_drop_overlay)
         self.drop_cmap.observe(cbk_drop_cmap)
