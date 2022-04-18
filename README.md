@@ -36,7 +36,7 @@ In the middle is the selecting area.
   - The slide bar is of the same scale as the histogram.
   - Use the text input to change cmin and cmax is more precise and also faster.
 
-The min-list and max-list widgets are just to show the values already set for the current marker across all spots. They are not interactive (yet).
+The min-list and max-list widgets show the values already set for the current marker across all spots. Use them to quickly apply existing thresholds. 
 
 ## Tips
 Make sure to click "Output image" to record the current thresholds. To record thresholds without generating tiffs, modify the output function.
