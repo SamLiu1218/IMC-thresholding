@@ -25,6 +25,7 @@ class ThresholdGUI:
         self.cur_raw = {}
         self.cur_overlay = {}
         self.flag_update = True
+        self.verbose = False
         # for fn in fn_ls:
         #     for m in markers:
         #         if isnan(self.cmaxs.loc[fn,m]):
@@ -206,21 +207,27 @@ class ThresholdGUI:
         
         def cbk_drop_fn(change):
             if change['type'] == 'change' and change['name'] == 'value':
-            
+                
+                self.log(' + cbk_drop_fn starts.')
                 fn = self.drop_fn.value
                 m = self.drop_m.value
                 im  = self.rcf(data=self.data, fn=fn, m=m)
                 self.slide_range.max = np.max(im)
                 cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
                 cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
-                self.slide_range.value = (cmin, cmax)
+                # self.slide_range.value = (cmin, cmax)
+                self.flag_update = False
+                self.text_cmax.value = cmax
+                self.flag_update = True
+                self.text_cmin.value = cmin
 
-                # update_im()
                 self.update_raw()
-                # update_overlay()
-                # update_hist()
+                self.update_im()
+                self.update_overlay()
+                self.update_hist()
                 self.report('ROI changed. Ready.')
-        
+                self.log(' - cbk_drop_fn ends.')
+
         def cbk_drop_filter( *args):  
             fn = self.drop_fn.value
             if self.drop_filter.value == 'All':
@@ -234,19 +241,26 @@ class ThresholdGUI:
             self.report('Filter changed. Ready.')
 
         def cbk_drop_m(change):
-                if change['type'] == 'change' and change['name'] == 'value':
-                    fn = self.drop_fn.value
-                    m = self.drop_m.value
-                    im  = self.rcf(data=self.data, fn=fn, m=m)
-                    self.update_histories()
-                    self.slide_range.max = np.max(im)
-                    cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
-                    cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
-                    self.slide_range.value = (cmin, cmax)
-                    self.text_cmin.value = cmin
-                    self.text_cmax.value = cmax
-                    self.update_raw()
-                    self.report('Marker changed. Ready.')
+            if change['type'] == 'change' and change['name'] == 'value':
+                
+                self.log(' + cbk_drop_m starts.')
+                self.flag_update = False
+                fn = self.drop_fn.value
+                m = self.drop_m.value
+                im  = self.rcf(data=self.data, fn=fn, m=m)
+                self.update_histories()
+                self.slide_range.max = np.max(im)
+                cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
+                cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
+                self.text_cmax.value = cmax
+                self.text_cmin.value = cmin
+                self.flag_update = True
+                self.update_raw()
+                self.update_im()
+                self.update_overlay()
+                self.update_hist()
+                self.report('Marker changed. Ready.')
+                self.log(' - cbk_drop_m ends.')
 
         def cbk_drop_overlay(change):
             if change['type'] == 'change' and change['name'] == 'value':
@@ -263,19 +277,29 @@ class ThresholdGUI:
 
         def cbk_slide_range(change):
             if change['type'] == 'change' and change['name'] == 'value':
+                
+                self.log(' ++ cbk_slide_range starts.')
                 self.text_cmin.value = self.slide_range.value[0]
                 self.text_cmax.value = self.slide_range.value[1]
                 self.slide2histories()
-                self.update_im()
-                self.update_overlay()
-                self.update_hist()
                 self.report('Thresholds changed. Ready.')
+                self.log(' -- cbk_slide_range ends.')
 
         def cbk_text_cmin(*args):
+            self.log(' +++ cbk_text_cmin starts.')
             self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
+            self.update_im()
+            self.update_overlay()
+            self.update_hist()
+            self.log(' --- cbk_text_cmin ends.')
 
         def cbk_text_cmax(*args):
+            self.log(' +++ cbk_text_cmax starts.')
             self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
+            self.update_im()
+            self.update_overlay()
+            self.update_hist()
+            self.log(' --- cbk_text_cmax ends.')
         
 
         def cbk_select_cmin(change):
@@ -330,9 +354,14 @@ class ThresholdGUI:
 
         
         # initialization
+        if self.verbose:
+            with open('log.txt','w+') as f:
+                f.write(' \n')
         fn = self.drop_fn.value
         m = self.drop_m.value
         im  = self.rcf(data=self.data, fn=fn, m=m)
+
+        self.log('layout.')
         self.slide_range.max = np.max(im)
         cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
         cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
@@ -341,13 +370,14 @@ class ThresholdGUI:
         self.text_cmin.value = self.slide_range.value[0]
         self.text_cmax.value = self.slide_range.value[1]
 
+        self.log('drawing.')
         self.update_im()
         self.update_raw()
         self.update_overlay()
         self.update_hist()
         self.update_histories()
 
-        
+        self.log('linking.')
         self.slide_range.observe(cbk_slide_range,names='value')
         self.text_cmax.observe(cbk_text_cmax)
         self.text_cmin.observe(cbk_text_cmin)
@@ -364,68 +394,104 @@ class ThresholdGUI:
         self.button_nextslide.on_click(cbk_button_nextslide)
 
         self.slide2histories()
-
+        self.log('Done.')
     def update_im(self, *args):
-        self.report('Updating thresholded image...')
-        fn = self.drop_fn.value
-        m = self.drop_m.value
-        self.w_im.value = Im2Bytes(cmpixel(
-            self.rcf(data=self.data, fn=fn, m=m), 
-            cmap = self.drop_cmap.value, 
-            cmin = self.slide_range.value[0],
-            cmax = self.slide_range.value[1]))
-        self.w_im.layout.width = 'auto'
-        self.report('Ready.')
+        cur = self.getcur()
+        funname = self.update_im.__name__
+        if not self.flag_update:
+            self.log(f' ..... {funname} suppressed.')
+        elif self.cur_im == cur:
+            self.log(f' ..... {funname} no update.')
+        else:
+            self.log(f' !!!!! {funname}.')
+            self.cur_im = cur
+            self.report('Updating thresholded image...')
+            fn = self.drop_fn.value
+            m = self.drop_m.value
+            self.w_im.value = Im2Bytes(cmpixel(
+                self.rcf(data=self.data, fn=fn, m=m), 
+                cmap = self.drop_cmap.value, 
+                cmin = self.slide_range.value[0],
+                cmax = self.slide_range.value[1]))
+            self.w_im.layout.width = 'auto'
+            self.report('Ready.')
 
     def update_raw(self, *args):
-        self.report('Updating raw image...')
-        fn = self.drop_fn.value
-        m = self.drop_m.value
-        self.w_raw.value = Im2Bytes(cmpixel(
-            self.rcf(data=self.data, fn=fn, m=m), 
-            cmap=self.drop_cmap.value, 
-            cmin = 0,
-            cmax = None))
-        self.w_raw.layout.width = 'auto'
-        self.report('Ready.')
+        cur = self.getcur()
+        funname = self.update_raw.__name__
+        if not self.flag_update:
+            self.log(f' ..... {funname} suppressed.')
+        elif self.cur_raw == cur:
+            self.log(f' ..... {funname} no update.')
+        else:
+            self.log(f' !!!!! {funname}.')
+            self.cur_raw = cur
+            self.report('Updating raw image...')
+            fn = self.drop_fn.value
+            m = self.drop_m.value
+            self.w_raw.value = Im2Bytes(cmpixel(
+                self.rcf(data=self.data, fn=fn, m=m), 
+                cmap=self.drop_cmap.value, 
+                cmin = 0,
+                cmax = None))
+            self.w_raw.layout.width = 'auto'
+            self.report('Ready.')
 
     def update_overlay(self, *args):
-        self.report('Updating overlay image...')
-        fn = self.drop_fn.value
-        m = self.drop_m.value
-        if self.drop_overlay.value:
-            m2 = self.drop_overlay.value
-            self.w_overlay.value = Im2Bytes(overlay(
-                    data = self.data, fn=fn,
-                    m1=m, m2=m2,
-                    cmin1 = self.slide_range.value[0],
-                    cmin2 =  self.cmins.loc[fn, m2],
-                    cmax1 = self.slide_range.value[1],
-                    cmax2 = self.cmaxs.loc[fn, m2],
-                    rcf = self.rcf
-                    ))
+        cur = self.getcur()
+        funname = self.update_overlay.__name__
+        if not self.flag_update:
+            self.log(f' ..... {funname} suppressed.')
+        elif self.cur_overlay == cur:
+            self.log(f' ..... {funname} no update.')
         else:
-            self.w_overlay.value = Im2Bytes(overlay(
-                    data = self.data, fn=fn,
-                    m1=m, 
-                    cmin1 = self.slide_range.value[0],
-                    cmax1 = self.slide_range.value[1],
-                    rcf = self.rcf
-                    ))
+            self.log(f' !!!!! {funname}.')
+            self.cur_overlay = cur
+            self.report('Updating overlay image...')
+            fn = self.drop_fn.value
+            m = self.drop_m.value
+            if self.drop_overlay.value:
+                m2 = self.drop_overlay.value
+                self.w_overlay.value = Im2Bytes(overlay(
+                        data = self.data, fn=fn,
+                        m1=m, m2=m2,
+                        cmin1 = self.slide_range.value[0],
+                        cmin2 =  self.cmins.loc[fn, m2],
+                        cmax1 = self.slide_range.value[1],
+                        cmax2 = self.cmaxs.loc[fn, m2],
+                        rcf = self.rcf
+                        ))
+            else:
+                self.w_overlay.value = Im2Bytes(overlay(
+                        data = self.data, fn=fn,
+                        m1=m, 
+                        cmin1 = self.slide_range.value[0],
+                        cmax1 = self.slide_range.value[1],
+                        rcf = self.rcf
+                        ))
         self.report('Ready.')
 
     def update_hist(self, *args):
-        self.report('Updating histogram...')
-        fn = self.drop_fn.value
-        m = self.drop_m.value
-        self.w_hist.value = Im2Bytes(cmhist(
-            self.rcf(data=self.data, fn=fn, m=m), 
-            cmap=self.drop_cmap.value, 
-            cmin = self.slide_range.value[0],
-            cmax = self.slide_range.value[1]))    
-        self.w_hist.layout.width = 'auto'
-        self.w_hist.layout.height = '600px'
-        self.report('Ready.')
+        cur = self.getcur()
+        funname = self.update_hist.__name__
+        if not self.flag_update:
+            self.log(f' ..... {funname} suppressed.')
+        elif self.cur_hist == cur:
+            self.log(f' ..... {funname} no update.')
+        else:
+            self.log(f' !!!!! {funname}.')
+            self.cur_hist = cur
+            self.report('Updating histogram...')
+            fn = self.drop_fn.value
+            m = self.drop_m.value
+            self.w_hist.value = Im2Bytes(cmhist(
+                self.rcf(data=self.data, fn=fn, m=m), 
+                cmap=self.drop_cmap.value, 
+                cmin = self.slide_range.value[0],
+                cmax = self.slide_range.value[1]))    
+            self.w_hist.layout.width = 'auto'
+            self.w_hist.layout.height = '600px'
+            self.report('Ready.')
 
     def update_histories(self, *args):
         self.report('Updating histories...')
@@ -464,3 +530,10 @@ class ThresholdGUI:
             self.select_cmax.value = str(self.slide_range.value[1])
         else:            
             self.select_cmax.value = None
+
+    def log(self, msg):
+        if self.verbose:
+            f = open('log.txt', 'a')
+            current_time = datetime.now().strftime("%H:%M:%S")
+            f.write(f'{current_time}\t{msg}.\n')
+            f.close()
