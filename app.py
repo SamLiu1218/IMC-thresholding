@@ -20,6 +20,11 @@ class ThresholdGUI:
         self.stf = func_dict['savetiff']
         self.cmins = cmins_table if not type(cmaxs_table) == type(None) else pd.DataFrame(index=fn_ls, columns=markers)
         self.cmaxs = cmaxs_table if not type(cmaxs_table)  == type(None) else pd.DataFrame(index=fn_ls, columns=markers)
+        self.cur_im = {}
+        self.cur_hist = {}
+        self.cur_raw = {}
+        self.cur_overlay = {}
+        self.flag_update = True
         # for fn in fn_ls:
         #     for m in markers:
         #         if isnan(self.cmaxs.loc[fn,m]):
@@ -95,7 +100,7 @@ class ThresholdGUI:
             min=0, 
             max=4, 
             step=0.01, 
-            continuous_update=False, 
+            continuous_update=True, 
             readout=False,
             orientation = 'vertical',
             layout=widgets.Layout(height='600px', width='auto')
@@ -122,17 +127,17 @@ class ThresholdGUI:
         # range history
 
         self.select_cmin = widgets.Select(
-            options=[],
+            options=[0],
             description='Min list:',
-            disabled=True,
+            disabled=False,
             style={'description_width': 'initial'},
             layout=widgets.Layout( width='auto')
         )
 
         self.select_cmax = widgets.Select(
-            options=[],
+            options=["Max"],
             description='Max lst:',
-            disabled=True,
+            disabled=False,
             style={'description_width': 'initial'},
             layout=widgets.Layout( width='auto')
         )
@@ -199,21 +204,22 @@ class ThresholdGUI:
 
 
         
-        def cbk_drop_fn( *args): 
+        def cbk_drop_fn(change):
+            if change['type'] == 'change' and change['name'] == 'value':
             
-            fn = self.drop_fn.value
-            m = self.drop_m.value
-            im  = self.rcf(data=self.data, fn=fn, m=m)
-            self.slide_range.max = np.max(im)
-            cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
-            cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
-            self.slide_range.value = (cmin, cmax)
+                fn = self.drop_fn.value
+                m = self.drop_m.value
+                im  = self.rcf(data=self.data, fn=fn, m=m)
+                self.slide_range.max = np.max(im)
+                cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
+                cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
+                self.slide_range.value = (cmin, cmax)
 
-            # update_im(self)
-            self.update_raw(self)
-            # update_overlay(self)
-            # update_hist(self)
-            self.report('ROI changed.')
+                # update_im()
+                self.update_raw()
+                # update_overlay()
+                # update_hist()
+                self.report('ROI changed. Ready.')
         
         def cbk_drop_filter( *args):  
             fn = self.drop_fn.value
@@ -225,33 +231,45 @@ class ThresholdGUI:
                     if len(idx) > 1:
                         self.drop_m.options = self.markers[idx]
                         self.drop_m.value = self.drop_m.options[0]
-            self.report('Filter changed.')
+            self.report('Filter changed. Ready.')
 
-        def cbk_drop_m( *args): 
-            cbk_drop_fn(*args)
-            self.update_histories(self)
-            self.report('Marker changed.')
+        def cbk_drop_m(change):
+                if change['type'] == 'change' and change['name'] == 'value':
+                    fn = self.drop_fn.value
+                    m = self.drop_m.value
+                    im  = self.rcf(data=self.data, fn=fn, m=m)
+                    self.update_histories()
+                    self.slide_range.max = np.max(im)
+                    cmin = self.cmins.loc[fn, m] if not isnan(self.cmins.loc[fn, m]) else 0
+                    cmax = self.cmaxs.loc[fn, m] if not isnan(self.cmaxs.loc[fn, m]) else self.slide_range.max
+                    self.slide_range.value = (cmin, cmax)
+                    self.text_cmin.value = cmin
+                    self.text_cmax.value = cmax
+                    self.update_raw()
+                    self.report('Marker changed. Ready.')
 
-        def cbk_drop_overlay( *args): 
-            self.update_overlay(self)
-            self.report('Overlay updated.')
+        def cbk_drop_overlay(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                self.update_overlay()
+                self.report('Overlay updated. Ready.')
 
-        def cbk_drop_cmap( *args):
-            
-            self.update_im(self)
-            self.update_raw(self)
-            self.update_hist(self)
-            self.report('Colormap changed.')
+        def cbk_drop_cmap(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                
+                self.update_im()
+                self.update_raw()
+                self.update_hist()
+                self.report('Colormap changed. Ready.')
 
-        def cbk_slide_range(*args):
-            self.text_cmin.value = self.slide_range.value[0]
-            self.text_cmax.value = self.slide_range.value[1]
-            self.select_cmin.value = None
-            self.select_cmax.value = None
-            self.update_im(self)
-            self.update_overlay(self)
-            self.update_hist(self)
-            self.report('Thresholds changed.')
+        def cbk_slide_range(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                self.text_cmin.value = self.slide_range.value[0]
+                self.text_cmax.value = self.slide_range.value[1]
+                self.slide2histories()
+                self.update_im()
+                self.update_overlay()
+                self.update_hist()
+                self.report('Thresholds changed. Ready.')
 
         def cbk_text_cmin(*args):
             self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
@@ -260,24 +278,32 @@ class ThresholdGUI:
             self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
         
 
-        def cbk_select_cmin( *args):
-            self.slide_range.value = (self.select_cmin.value, self.text_cmax.value) 
+        def cbk_select_cmin(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                if not self.select_cmin.value == None:
+                    self.slide_range.value = (self.select_cmin.value, self.text_cmax.value) 
 
-        def cbk_select_cmax( *args):
-            self.slide_range.value = (self.text_cmin.value, self.select_cmax.value)
+        def cbk_select_cmax(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                if not self.select_cmax.value == None:
+                    if self.select_cmax.value == "Max":
+                        self.slide_range.value = (self.text_cmin.value, self.slide_range.max)
+                    else:
+                        self.slide_range.value = (self.text_cmin.value, float(self.select_cmax.value))
 
         def cbk_button_nextslide( *args):
             if self.drop_fn.index < len(self.drop_fn.options)-1:
                 self.drop_fn.index += 1
             else:
                 self.drop_fn.index = 0
-                self.report('Jumped back to first spot.')
+                self.report('Jumped back to first spot. Ready.')
+
         def cbk_button_nextmarker( *args):
             if self.drop_m.index < len(self.drop_m.options)-1:
                 self.drop_m.index += 1
             else:
                 self.drop_m.index = 0
-                self.report('Jumped back to first marker.')
+                self.report('Jumped back to first marker. Ready.')
 
         def cbk_button_exportimage( *args):
             try:
@@ -290,7 +316,7 @@ class ThresholdGUI:
                 if cmax < np.max(im):
                     self.cmaxs.loc[fn,m] = cmax
                 self.stf(fn, m, im, cmin, cmax, self.outdir)
-                self.report(f'Outputed at {os.path.join(outdir,fn,f"{m}.tiff")}.')
+                self.report(f'Outputed at {os.path.join(outdir,fn,f"{m}.tiff")}. Ready.')
                 self.update_histories()
             except Exception as e:
                 self.report(e)
@@ -315,11 +341,11 @@ class ThresholdGUI:
         self.text_cmin.value = self.slide_range.value[0]
         self.text_cmax.value = self.slide_range.value[1]
 
-        self.update_im(self)
-        self.update_raw(self)
-        self.update_overlay(self)
-        self.update_hist(self)
-        self.update_histories(self)
+        self.update_im()
+        self.update_raw()
+        self.update_overlay()
+        self.update_hist()
+        self.update_histories()
 
         
         self.slide_range.observe(cbk_slide_range,names='value')
@@ -330,12 +356,14 @@ class ThresholdGUI:
         self.drop_m.observe(cbk_drop_m)
         self.drop_overlay.observe(cbk_drop_overlay)
         self.drop_cmap.observe(cbk_drop_cmap)
-        # self.select_cmin.observe(cbk_select_cmin)
-        # self.select_cmax.observe(cbk_select_cmax)
+        self.select_cmin.observe(cbk_select_cmin)
+        self.select_cmax.observe(cbk_select_cmax)
         self.button_exportimage.on_click(cbk_button_exportimage)
         self.button_exporttable.on_click(cbk_button_exporttable)
         self.button_nextmarker.on_click(cbk_button_nextmarker)
         self.button_nextslide.on_click(cbk_button_nextslide)
+
+        self.slide2histories()
 
     def update_im(self, *args):
         self.report('Updating thresholded image...')
@@ -402,12 +430,37 @@ class ThresholdGUI:
     def update_histories(self, *args):
         self.report('Updating histories...')
         m = self.drop_m.value
-        self.select_cmin.options = findnotna(self.cmins[m])
-        self.select_cmin.value = None
-        self.select_cmax.options = findnotna(self.cmaxs[m])
-        self.select_cmax.value = None
+        self.select_cmin.options = np.concatenate([[0], np.sort(findnotna(self.cmins[m]))])        
+        if self.slide_range.value[0] in self.select_cmin.options:
+            self.select_cmin.value = self.slide_range.value[0]
+        else:            
+            self.select_cmin.value = None
+
+        self.select_cmax.options = np.concatenate([["Max"], np.sort(findnotna(self.cmaxs[m]))[::-1]])
+        if self.slide_range.value[1] == self.slide_range.max:
+            self.select_cmax.value = "Max"
+        elif str(self.slide_range.value[1]) in self.select_cmax.options:
+            self.select_cmax.value = str(self.slide_range.value[1])
+        else:            
+            self.select_cmax.value = None
         self.report('Ready.')
 
     def report(self, msg):
         current_time = datetime.now().strftime("%H:%M:%S")
         self.label_report.value = f'{current_time}     {msg}'
+
+    def getcur(self):
+        return {'fn': self.drop_fn.value, 'm': self.drop_m.value, 'cmap':self.drop_cmap.value, 'overlay':self.drop_overlay.value, 'cmin':self.slide_range.value[0], 'cmax':self.slide_range.value[1]}
+
+    def slide2histories(self):
+        if self.slide_range.value[0] in self.select_cmin.options:
+            self.select_cmin.value = self.slide_range.value[0]
+        else:            
+            self.select_cmin.value = None
+
+        if self.slide_range.value[1] == self.slide_range.max:
+            self.select_cmax.value = "Max"
+        elif str(self.slide_range.value[1]) in self.select_cmax.options:
+            self.select_cmax.value = str(self.slide_range.value[1])
+        else:            
+            self.select_cmax.value = None
