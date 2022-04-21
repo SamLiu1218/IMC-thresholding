@@ -330,6 +330,7 @@ class ThresholdGUI:
                 self.report('Jumped back to first marker. Ready.')
 
         def cbk_button_exportimage( *args):
+            self.flag_update = False
             try:
                 self.report('Recording thresholds and outputing tiff file ...')
                 fn = self.drop_fn.value
@@ -342,9 +343,14 @@ class ThresholdGUI:
                 self.stf(fn, m, im, cmin, cmax, self.outdir)
                 self.report(f'Outputed at {os.path.join(outdir,fn,f"{m}.tiff")}. Ready.')
                 self.update_histories()
+                self.select_cmin.value = self.cmins.loc[fn,m]
+                if isnan(self.cmaxs.loc[fn,m]):
+                    self.select_cmax.value = 'Max'
+                else:
+                    self.select_cmax.value = self.cmaxs.loc[fn,m]
             except Exception as e:
                 self.report(e)
-
+            self.flag_update = True
 
         def cbk_button_exporttable( *args):
             self.cmins.to_csv(os.path.join(outdir,'cmins.csv'))
