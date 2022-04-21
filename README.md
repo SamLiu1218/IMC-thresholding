@@ -1,5 +1,5 @@
 # IMC-thresholding
-A GUI for manually setting thresholds for IMC channels
+A GUI for visualizing and setting thresholds for IMC channels
 
 
 ## libraries
