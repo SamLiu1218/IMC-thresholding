@@ -34,7 +34,7 @@ In the middle is the selecting area.
 
   - The histogram shows pixel intensity distributions. Bars are colored by the colormap selected. Blue dash line shows the cmin, red showing cmax.
   - The slide bar is of the same scale as the histogram.
-  - Use the text input to change cmin and cmax is more precise and also faster.
+  - Using the text input boxes to change cmin and cmax is more precise and also faster.
 
 The min-list and max-list widgets show the values already set for the current marker across all spots. Use them to quickly apply existing thresholds. 
 
