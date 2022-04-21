@@ -285,21 +285,23 @@ class ThresholdGUI:
                 self.report('Thresholds changed. Ready.')
                 self.log(' -- cbk_slide_range ends.')
 
-        def cbk_text_cmin(*args):
-            self.log(' +++ cbk_text_cmin starts.')
-            self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
-            self.update_im()
-            self.update_overlay()
-            self.update_hist()
-            self.log(' --- cbk_text_cmin ends.')
+        def cbk_text_cmin(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                self.log(' +++ cbk_text_cmin starts.')
+                self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
+                self.update_im()
+                self.update_overlay()
+                self.update_hist()
+                self.log(' --- cbk_text_cmin ends.')
 
-        def cbk_text_cmax(*args):
-            self.log(' +++ cbk_text_cmax starts.')
-            self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
-            self.update_im()
-            self.update_overlay()
-            self.update_hist()
-            self.log(' --- cbk_text_cmax ends.')
+        def cbk_text_cmax(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                self.log(' +++ cbk_text_cmax starts.')
+                self.slide_range.value = (self.text_cmin.value, self.text_cmax.value)
+                self.update_im()
+                self.update_overlay()
+                self.update_hist()
+                self.log(' --- cbk_text_cmax ends.')
         
 
         def cbk_select_cmin(change):
